@@ -238,3 +238,62 @@ def action_of_twist_on_homology(cover, homology, curve, power):
         lambda x : homology.module.quotient_map()(T(homology.module.lift_map()(x)))
     )
     return action_on_homology
+
+
+def is_liftable_twist(i, j, cover, power):
+    """ For i < j, returns boolean indicating whether a power of the twist around a curve surrounding the ith and jth branch points is liftable"""
+    if i >= j:
+        raise ValueError("Must have i < j")
+    if power < 1:
+        raise ValueError("power must be positive")
+
+    twist_curve_from_i = cover.monodromy[2*i]
+    for k in range(i+1,j):
+        twist_curve_from_i = twist_curve_from_i*cover.monodromy[2*k]
+    twist_curve_from_i = twist_curve_from_i * cover.monodromy[2*j]
+    for k in range(j-1, i, -1):
+        twist_curve_from_i = twist_curve_from_i*cover.monodromy[2*k+1]
+
+    twist_curve_from_j = cover.deck_group.identity()
+    for k in range(j-1, i, -1):
+        twist_curve_from_j = twist_curve_from_j*cover.monodromy[2*k+1]
+    twist_curve_from_j = twist_curve_from_j * cover.monodromy[2*i]
+    for k in range(i+1,j):
+        twist_curve_from_j = twist_curve_from_j*cover.monodromy[2*k]
+    twist_curve_from_j = twist_curve_from_j * cover.monodromy[2*j]
+
+    new_hom = [g for g in cover.monodromy]
+    new_hom[2*i] = (twist_curve_from_i^power)*new_hom[2*i]*(twist_curve_from_i^(-power))
+    new_hom[2*i+1] = new_hom[2*i]^(-1)
+    new_hom[2*j] = (twist_curve_from_j^power)*new_hom[2*j]*(twist_curve_from_j^(-power))
+    new_hom[2*j+1] = new_hom[2*j]^(-1)
+
+    return (new_hom == cover.monodromy)
+
+
+def liftable_curves(cover, power):
+    """Returns a list of Curves for which a power of a twist is liftable"""
+    if power < 1:
+        raise ValueError("power must be positive")
+
+    curves = []
+    branch_point_pairs = [(i,j) for i in range(0, (cover.number_of_edges/2)-1) for j in range(i+1, (cover.number_of_edges/2)) if is_liftable_twist(i,j,cover,power)]
+    for branch_point_pair in branch_point_pairs:
+        i = branch_point_pair[0]
+        j = branch_point_pair[1]
+
+        downstairs_curve = []
+        downstairs_curve.append((2*i, 0, 1))
+        downstairs_curve.append((2*i+1,0,-1))
+        for k in range(i+1, j):
+            downstairs_curve.append((2*k,0,1))
+            downstairs_curve.append((2*k+1,0,-1))
+        downstairs_curve.append((2*j, 0, 1))
+        downstairs_curve.append((2*j+1,0,-1))
+        for k in range(j-1, i, -1):
+            downstairs_curve.append((2*k+1,1,1))
+            downstairs_curve.append((2*k,1,-1))
+        
+        curves.append(Curve(cover, downstairs_curve))
+    
+    return curves

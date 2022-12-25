@@ -245,3 +245,62 @@ def action_of_twist_on_homology(cover, homology, curve, power):
     )
     return action_on_homology
 
+
+def is_liftable_twist(i, j, cover, power):
+    """ For i < j, returns boolean indicating whether a power of the twist around a curve surrounding the ith and jth branch points is liftable"""
+    if i >= j:
+        raise ValueError("Must have i < j")
+    if power < _sage_const_1 :
+        raise ValueError("power must be positive")
+
+    twist_curve_from_i = cover.monodromy[_sage_const_2 *i]
+    for k in range(i+_sage_const_1 ,j):
+        twist_curve_from_i = twist_curve_from_i*cover.monodromy[_sage_const_2 *k]
+    twist_curve_from_i = twist_curve_from_i * cover.monodromy[_sage_const_2 *j]
+    for k in range(j-_sage_const_1 , i, -_sage_const_1 ):
+        twist_curve_from_i = twist_curve_from_i*cover.monodromy[_sage_const_2 *k+_sage_const_1 ]
+
+    twist_curve_from_j = cover.deck_group.identity()
+    for k in range(j-_sage_const_1 , i, -_sage_const_1 ):
+        twist_curve_from_j = twist_curve_from_j*cover.monodromy[_sage_const_2 *k+_sage_const_1 ]
+    twist_curve_from_j = twist_curve_from_j * cover.monodromy[_sage_const_2 *i]
+    for k in range(i+_sage_const_1 ,j):
+        twist_curve_from_j = twist_curve_from_j*cover.monodromy[_sage_const_2 *k]
+    twist_curve_from_j = twist_curve_from_j * cover.monodromy[_sage_const_2 *j]
+
+    new_hom = [g for g in cover.monodromy]
+    new_hom[_sage_const_2 *i] = (twist_curve_from_i**power)*new_hom[_sage_const_2 *i]*(twist_curve_from_i**(-power))
+    new_hom[_sage_const_2 *i+_sage_const_1 ] = new_hom[_sage_const_2 *i]**(-_sage_const_1 )
+    new_hom[_sage_const_2 *j] = (twist_curve_from_j**power)*new_hom[_sage_const_2 *j]*(twist_curve_from_j**(-power))
+    new_hom[_sage_const_2 *j+_sage_const_1 ] = new_hom[_sage_const_2 *j]**(-_sage_const_1 )
+
+    return (new_hom == cover.monodromy)
+
+
+def liftable_curves(cover, power):
+    """Returns a list of Curves for which a power of a twist is liftable"""
+    if power < _sage_const_1 :
+        raise ValueError("power must be positive")
+
+    curves = []
+    branch_point_pairs = [(i,j) for i in range(_sage_const_0 , (cover.number_of_edges/_sage_const_2 )-_sage_const_1 ) for j in range(i+_sage_const_1 , (cover.number_of_edges/_sage_const_2 )) if is_liftable_twist(i,j,cover,power)]
+    for branch_point_pair in branch_point_pairs:
+        i = branch_point_pair[_sage_const_0 ]
+        j = branch_point_pair[_sage_const_1 ]
+
+        downstairs_curve = []
+        downstairs_curve.append((_sage_const_2 *i, _sage_const_0 , _sage_const_1 ))
+        downstairs_curve.append((_sage_const_2 *i+_sage_const_1 ,_sage_const_0 ,-_sage_const_1 ))
+        for k in range(i+_sage_const_1 , j):
+            downstairs_curve.append((_sage_const_2 *k,_sage_const_0 ,_sage_const_1 ))
+            downstairs_curve.append((_sage_const_2 *k+_sage_const_1 ,_sage_const_0 ,-_sage_const_1 ))
+        downstairs_curve.append((_sage_const_2 *j, _sage_const_0 , _sage_const_1 ))
+        downstairs_curve.append((_sage_const_2 *j+_sage_const_1 ,_sage_const_0 ,-_sage_const_1 ))
+        for k in range(j-_sage_const_1 , i, -_sage_const_1 ):
+            downstairs_curve.append((_sage_const_2 *k+_sage_const_1 ,_sage_const_1 ,_sage_const_1 ))
+            downstairs_curve.append((_sage_const_2 *k,_sage_const_1 ,-_sage_const_1 ))
+        
+        curves.append(Curve(cover, downstairs_curve))
+    
+    return curves
+

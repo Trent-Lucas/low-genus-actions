@@ -60,6 +60,16 @@ for pair in liftableTwists:
     print(T.matrix()*action_of_r.matrix() == action_of_r.matrix()*T.matrix())
     print(T.matrix()*action_of_s.matrix() == action_of_s.matrix()*T.matrix())
 
+T = action_of_twist_on_homology(cover, h, Curve(cover, [(0,0,1),(1,0,-1)]), 1)
+print(T.matrix())
+print("------------------------------------------")
+
+print(is_liftable_twist(0,2,cover,1))
+print([curve.downstairs_curve for curve in liftable_curves(cover, 1)])
+print([curve.downstairs_curve for curve in liftable_curves(cover, 2)])
+print([curve.downstairs_curve for curve in liftable_curves(cover, 3)])
+
+
 print("------------------------------------------")
 
 G = SymmetricGroup(4)
@@ -104,3 +114,6 @@ for pair in liftableTwists:
     print(T.matrix()*action_of_x.matrix() == action_of_x.matrix()*T.matrix())
     print(T.matrix()*action_of_y.matrix() == action_of_y.matrix()*T.matrix())
     print(T.matrix()*action_of_z.matrix() == action_of_z.matrix()*T.matrix())
+
+T = action_of_twist_on_homology(cover, h, Curve(cover, [(0,0,1),(1,0,-1)]), 1)
+print(T.matrix())
