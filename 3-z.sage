@@ -49,27 +49,25 @@ for g in G:
 
 twist_matrices = []
 
-for power in range (1,2):
+for power in range (1,4):
     for curve in liftable_curves(cover, power):
         T = action_of_twist_on_homology(cover, h, curve, power)
+        # Can verify that T commutes with deck group
         for g in G:
             assert T.matrix()*deck_group_actions[g].matrix() == deck_group_actions[g].matrix()*T.matrix()
+        
         R = B.inverse()*T.matrix()*B
+        # R will be a block matrix where each block is a multiple of the identity
         T_in_isotypic = matrix([[R[0][0], R[0][3]],[R[3][0],R[3][3]]])
+        
+        # Can verify that T has integer entries
         for i in range(0,2):
             for j in range(0,2):
                 assert T_in_isotypic[i][j] in ZZ
         assert T_in_isotypic.determinant() == 1
 
         twist_matrices.append(T_in_isotypic)
-        #print(T_in_isotypic)
 
 ##### Check finite index #####
 
-gap.eval("F:=FreeGroup(2)")
-gap.eval("a:=F.1")
-gap.eval("b:=F.2")
-gap.eval("H:=Subgroup(F,[a^2,b])")
-print(gap.eval("Index(F,H)"))
-print(is_finite_index(twist_matrices) != "infinity")
-
+print(is_finite_index(twist_matrices))

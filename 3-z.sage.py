@@ -55,7 +55,7 @@ for g in G:
 
 twist_matrices = []
 
-for power in range (_sage_const_1 ,_sage_const_2 ):
+for power in range (_sage_const_1 ,_sage_const_4 ):
     for curve in liftable_curves(cover, power):
         T = action_of_twist_on_homology(cover, h, curve, power)
         for g in G:
@@ -72,11 +72,6 @@ for power in range (_sage_const_1 ,_sage_const_2 ):
 
 ##### Check finite index #####
 
-gap.eval("F:=FreeGroup(2)")
-gap.eval("a:=F.1")
-gap.eval("b:=F.2")
-gap.eval("H:=Subgroup(F,[a^2,b])")
-print(gap.eval("Index(F,H)"))
-print(is_finite_index(twist_matrices) != "infinity")
+print(is_finite_index(twist_matrices))
 
 

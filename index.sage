@@ -7,14 +7,14 @@ def entry_max(M):
 
 def schreier(gens, transversal):
     """ 
-    Given a generating set of a subgroup of SL(2,Z), returns a generating set for intersection with Gamma(2) 
+    Given a generating set of a subgroup H of SL(2,Z), returns a generating set for intersection with Gamma(2) 
 
     Parameters
     ----------
     gens: list of matrices 
         generators of subgroup
     transversal: dict
-        given a matrix N in SL(2,2), transversal[N] is a representative of N in SL(2,Z)
+        given a matrix N in SL(2,2), transversal[N] is a representative of N in H
     """
     subgroup_gens = []
     for S in gens:
@@ -28,18 +28,24 @@ def schreier(gens, transversal):
     return subgroup_gens
 
 
-def word_in_sanov_generators(M):
-    """ Given a matrix M in the sanov subgroup, returns list of integers representing word in free generators. """
+def word_in_sanov_generators(mat):
+    """ Given a matrix mat in the sanov subgroup, returns list of integers representing word in free generators. """
 
+    # We decompose mat recursively, keeping track of the word we've accumulated
     def sanov_recursion(M, left_word, right_word):
         A = matrix([[1,2],[0,1]])
         B = matrix([[1,0],[2,1]])
         labels = {1 : A, -1 : A.inverse(), 2 : B, -2 : B.inverse()}
         entry_max_M = entry_max(M)
 
+        # Base case: M is the identity
         if entry_max_M == 1:
             right_word.reverse()
             word = [-1*l for l in left_word] + [-1*r for r in right_word]
+            
+            # We can check that we have successfully decomposed mat
+            assert prod([labels[i] for i in word])*identity_matrix(2) == mat
+            
             return word
 
         else:
@@ -54,17 +60,18 @@ def word_in_sanov_generators(M):
                     result = sanov_recursion(M*C, left_word, right_word)
                     return result
 
-    return sanov_recursion(M, [], [])
+    return sanov_recursion(mat, [], [])
 
 
 def transversal(gens):
-    """ Given a generating set of a subgroup Gamma of SL(2,Z), returns a transversal of Gamma cap Gamma(2) in Gamma. """
+    """ Given a generating set of a subgroup H of SL(2,Z), returns a transversal of H cap Gamma(2) in H. """
     
     image_mod_2 = SL(2,2).subgroup([matrix(GF(2), gen) for gen in gens])
     immutable_image = [matrix(mat) for mat in image_mod_2]
     for mat in immutable_image:
         mat.set_immutable()
 
+    # To build the transversal, we iterate over longer and longer words in the generators until we fill up the whole image
     transversal = {}
     reps_found = set()
     word_length = 1
@@ -91,6 +98,7 @@ def is_finite_index(gens):
     intersection_gens = schreier(gens, trans)
 
     # If necessary, can replace each gen with -1*gen to assume we're in the Sanov subgroup
+    # The Sanov subgroup has diagonal matrices congruent to 1 mod 4
     for gen in intersection_gens:
         if gen[0][0] % 4 == 3:
             gen = -1*gen
@@ -99,11 +107,11 @@ def is_finite_index(gens):
     free_subgroup_gens = []
     for gen in intersection_gens:
         free_subgroup_gens.append(F(word_in_sanov_generators(gen)))
-    H = F.subgroup(free_subgroup_gens)
 
+    # We use GAP to check the index of the subroup
     gap.eval("F:=FreeGroup(2)")
     gap.eval("a:=F.1")
     gap.eval("b:=F.2")
     gap.eval("H:=Subgroup(F,[ %s ])" % ", ".join([str(w) for w in free_subgroup_gens]))
     val = gap.eval("Index(F,H)")
-    return val
+    return (val != "infinity")
