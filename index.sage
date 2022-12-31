@@ -55,7 +55,7 @@ def word_in_sanov_generators(mat):
                     left_word.append(i)
                     result = sanov_recursion(C*M, left_word, right_word)
                     return result
-                if entry_max(M*C) < entry_max_M:
+                elif entry_max(M*C) < entry_max_M:
                     right_word.append(i)
                     result = sanov_recursion(M*C, left_word, right_word)
                     return result
@@ -95,13 +95,11 @@ def is_finite_index(gens):
     """Given a list of generators of a subgroup Gamma of SL(2,Z), determines whether the index of Gamma is finite."""
 
     trans = transversal(gens)
-    intersection_gens = schreier(gens, trans)
-
+    intersection_gens_unadjusted = schreier(gens, trans)
+    
     # If necessary, can replace each gen with -1*gen to assume we're in the Sanov subgroup
     # The Sanov subgroup has diagonal matrices congruent to 1 mod 4
-    for gen in intersection_gens:
-        if gen[0][0] % 4 == 3:
-            gen = -1*gen
+    intersection_gens = [gen if gen[0][0] % 4 == 1 else -1*gen for gen in intersection_gens_unadjusted]
     
     F = FreeGroup('a,b')
     free_subgroup_gens = []
@@ -112,6 +110,6 @@ def is_finite_index(gens):
     gap.eval("F:=FreeGroup(2)")
     gap.eval("a:=F.1")
     gap.eval("b:=F.2")
-    gap.eval("H:=Subgroup(F,[ %s ])" % ", ".join([str(w) for w in free_subgroup_gens]))
+    gap.eval("H:=Subgroup(F,[ %s ])" % ", ".join([str(w) for w in free_subgroup_gens if w != F.one()]))
     val = gap.eval("Index(F,H)")
     return (val != "infinity")

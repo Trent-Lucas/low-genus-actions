@@ -2,11 +2,11 @@ from surfaces import *
 from lifted_twist import *
 from index import *
 
-G = AlternatingGroup(4)
-x = G("(1,2)(3,4)"); y = G("(1,2,3)")
+G = SymmetricGroup(4)
+x = G("(1,2)"); y = G("(2,3)"); z = G("(3,4)"); u = G("(1,3)"); v = G("(1,4)"); w = G("(2,4)")
 number_of_edges = 6
-hom = [x,x,x,x,y,y^(-1)]
-gluing = {0:1,1:0,2:3,3:2,4:5,5:4}
+hom = [x,x, y, y, y*x*z*y, y*x*z*y]
+gluing = {0:1, 1:0, 2:3, 3:2, 4:5, 5:4}
 edge_orientations = {0:1,1:-1,2:1,3:-1,4:1,5:-1}
 
 base_surface = BaseSurface(number_of_edges, gluing, edge_orientations)
@@ -20,18 +20,16 @@ for g in G:
         assert deck_group_actions[g]*deck_group_actions[h] == deck_group_actions[g*h]
 assert homology.module.dimension() == 6
 
+
 ##### Building the irrep #####
 
-# Our isotypic component is 2 copies of the standard representation of A_4
+# Our isotypic component is 2 copies of the standard representation tensor the sign representation
 # In this case, the isotypic component is the entire homology group
 # We want an orthogonal representation with integer entries, so we build it by hand.
 
-H = SymmetricGroup(4)
-a = H("(1,2)"); b = H("(2,3)"); c = H("(3,4)"); d = H("(1,3)"); e = H("(1,4)"); f = H("(2,4)")
-
 # First, we define the representation on the transpositions
-rep = {a: matrix([[0,1,0],[1,0,0],[0,0,1]]), b: matrix([[0,0,-1],[0,1,0],[-1,0,0]]), c: matrix([[0,-1,0],[-1,0,0],[0,0,1]]),
-    d: matrix([[1,0,0],[0,0,-1],[0,-1,0]]), e: matrix([[0,0,1],[0,1,0],[1,0,0]]), f: matrix([[1,0,0],[0,0,1],[0,1,0]])}
+rep = {x: (-1)*matrix([[0,1,0],[1,0,0],[0,0,1]]), y: (-1)*matrix([[0,0,-1],[0,1,0],[-1,0,0]]), z: (-1)*matrix([[0,-1,0],[-1,0,0],[0,0,1]]),
+    u: (-1)*matrix([[1,0,0],[0,0,-1],[0,-1,0]]), v: (-1)*matrix([[0,0,1],[0,1,0],[1,0,0]]), w: (-1)*matrix([[1,0,0],[0,0,1],[0,1,0]])}
 
 # Next, given an arbitrary permutation, we wish to decompose it into transpositions
 def transposition_decomp(g):
@@ -41,9 +39,9 @@ def transposition_decomp(g):
             transposition_tuples.append((t[i], t[i+1]))
     
     # We can check that our decomposition is correct
-    product = H.identity()
+    product = G.identity()
     for transposition in transposition_tuples:
-        product = H(transposition)*product
+        product = G(transposition)*product
     assert product == g
 
     return transposition_tuples
@@ -53,16 +51,17 @@ def get_rep(g):
     transpositions = transposition_decomp(g)
     image = matrix([[1,0,0],[0,1,0],[0,0,1]])
     for transposition in transpositions:
-        image = rep[H(transposition)]*image
+        image = rep[G(transposition)]*image
     return image
 
 # To minimize computation, we store the representation in a dictionary
-for g in H.list():
+for g in G.list():
     rep[g] = get_rep(g)
 
 # Checking that we have the correct representation
 for g in G:
     assert deck_group_actions[g].trace() == 2*rep[g].trace()
+
 
 ##### Building isomorphism between homology and rep #####
 
@@ -81,6 +80,7 @@ for g in G:
     g_bad = deck_group_actions[g]
     g_good = block_diagonal_matrix(rep[g], rep[g])
     assert g_bad*B*(g_good.inverse()) == B
+
 
 ##### Lifting twists #####
 
@@ -104,6 +104,7 @@ for power in range (1,4):
         assert T_in_isotypic.determinant() == 1
 
         twist_matrices.append(T_in_isotypic)
+
 
 ##### Check finite index #####
 
