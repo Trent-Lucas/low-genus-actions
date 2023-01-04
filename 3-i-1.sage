@@ -74,22 +74,49 @@ for g in G:
 R1 = B.inverse()*T1.matrix().transpose()*B
 R2 = B.inverse()*T2.matrix().transpose()*B
 
-# The upper-left 4x4 minor lies in SU(2,2), with complex numbers represented by 2x2 matrices
+# The upper-left 4x4 minor lies in the unitary group of the Reidemeister pairing, with complex numbers represented by 2x2 matrices
 T1_in_isotypic = matrix([[R1[0][0]+I*R1[1][0], R1[0][2]+I*R1[1][2]],[R1[2][0]+I*R1[3][0],R1[2][2]+I*R1[3][2]]])
 T2_in_isotypic = matrix([[R2[0][0]+I*R2[1][0], R2[0][2]+I*R2[1][2]],[R2[2][0]+I*R2[3][0],R2[2][2]+I*R2[3][2]]])
-print(T1_in_isotypic)
-print(T2_in_isotypic)
-
-# The above matrices lie in SU(1,1), so we conjugate into SL(2,R)
-C = matrix([[1, -I],[1,I]])
-twist_matrices = [C.inverse()*T1_in_isotypic*C, C.inverse()*T2_in_isotypic*C]
-print(twist_matrices)
 
 
-##### Check finite index #####
+##### Putting the intersection pairing into standard form ######
 
-for basis_vector in homology.module.basis():
-    edge_vector = homology.edge_chain_group.module.lift_map()(homology.module.lift_map()(basis_vector))
-    print([(homology.edge_chain_group.edge_module.label(homology.edge_chain_group.edge_module.module.basis()[i]), edge_vector[i]) for i in range(0, cover.deck_group.cardinality()*cover.number_of_edges) if edge_vector[i] != 0])
+# The following was used to see explicitly our homology basis
+#for basis_vector in homology.module.basis():
+#    edge_vector = homology.edge_chain_group.module.lift_map()(homology.module.lift_map()(basis_vector))
+#    print([(homology.edge_chain_group.edge_module.label(homology.edge_chain_group.edge_module.module.basis()[i]), edge_vector[i]) for i in range(0, cover.deck_group.cardinality()*cover.number_of_edges) if edge_vector[i] != 0])
 
-#print(is_finite_index(twist_matrices))
+# The above gives the following intersection matrix in the given basis of H_1(S)
+intersection_matrix = matrix([[0,0,0,0,-1,0],[0,0,1,0,1,-1],[0,-1,0,0,0,0],[0,0,0,0,0,-1],[1,-1,0,0,0,1],[0,1,0,1,-1,0]])
+assert intersection_matrix.determinant() != 0
+assert intersection_matrix.transpose() == -intersection_matrix
+assert T1.matrix().transpose().transpose()*intersection_matrix*T1.matrix().transpose() == intersection_matrix
+assert T2.matrix().transpose().transpose()*intersection_matrix*T2.matrix().transpose() == intersection_matrix
+
+# Now, we change to our preferred basis and compute the Reidemeister pairing
+S = B.transpose()*intersection_matrix*B
+
+reidemeister_pairing = matrix([[2*(S[2*i][2*j] + I*S[2*i][2*j+1]) for j in range(0,2)] for i in range(0,2)])
+assert reidemeister_pairing.determinant() != 0
+assert reidemeister_pairing.transpose() == -1*reidemeister_pairing.conjugate()
+assert T1_in_isotypic.transpose()*reidemeister_pairing*T1_in_isotypic.conjugate() == reidemeister_pairing
+assert T2_in_isotypic.transpose()*reidemeister_pairing*T2_in_isotypic.conjugate() == reidemeister_pairing
+
+# In our current basis, the Reidemeister pairing is the matrix [[16i, -8],[8,0]]
+# We do one more change of basis to land in SL(2,Z)
+P = matrix([[1,0],[-I,1]])
+T1_in_isotypic_proper_basis = P.inverse()*T1_in_isotypic*P
+T2_in_isotypic_proper_basis = P.inverse()*T2_in_isotypic*P
+assert T1_in_isotypic_proper_basis.determinant() == 1
+assert T2_in_isotypic_proper_basis.determinant() == 1
+for i in range(0,2):
+    for j in range(0,2):
+        assert T1_in_isotypic_proper_basis[i][j] in ZZ
+        assert T2_in_isotypic_proper_basis[i][j] in ZZ
+
+twist_matrices = [matrix(ZZ,T1_in_isotypic_proper_basis), matrix(ZZ,T2_in_isotypic_proper_basis)]
+
+
+##### Checking finite index #####
+
+print(is_finite_index(twist_matrices))

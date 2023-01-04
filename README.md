@@ -8,3 +8,5 @@ Given a finite cover of a surface with deck group G:
 * The module `index` can determine whether a subgroup of SL(2,Z) has finite index.
 
 Files starting with `2-` or `3-` are computations for specific cases.  They all show that the cover in question is arithmetic (running any of these files will print `True`).
+
+Note that you should load the GAP package `FGA`.
