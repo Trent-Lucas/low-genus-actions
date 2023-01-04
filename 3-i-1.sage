@@ -1,0 +1,95 @@
+#############################################################################
+#
+# In this file, we show that H_1(S) is 2 copies of the trivial rep and
+# two copies of Q(i), and that the action is arithmetic.
+#
+#############################################################################
+
+from surfaces import *
+from lifted_twist import *
+from index import *
+
+import lifted_twist
+
+G = CyclicPermutationGroup(4)
+x = G("(1,2,3,4)")
+number_of_edges = 6
+hom = [x, G.identity(), x^(-1), G.identity(), x^2, x^2]
+gluing = {0:2, 1:3, 2:0, 3:1, 4:5, 5:4}
+edge_orientations = {0:1,1:1,2:-1,3:-1,4:1,5:-1}
+
+base_surface = BaseSurface(number_of_edges, gluing, edge_orientations)
+cover = Cover(base_surface, G, hom)
+
+homology = HomologyGroup(cover)
+deck_group_actions = {g:homology.action_of_deck_group_on_homology(g).matrix().transpose() for g in G}
+# Sage assumes matrices act on the right, so we take the transpose to get an actual homomorphism
+for g in G:
+    for h in G:
+        assert deck_group_actions[g]*deck_group_actions[h] == deck_group_actions[g*h]
+assert homology.module.dimension() == 6
+
+
+##### Building the irrep #####
+
+rep = {x^i: matrix([[0,-1],[1,0]])^i for i in range(0,4)}
+
+for g in G:
+    assert deck_group_actions[g].trace() == 2*rep[g].trace() + 2
+
+
+##### Building the isomorphism between homology and rep #####
+
+A = matrix([[1,0,0,0,1,1],[0,1,0,0,0,0],[0,0,1,0,0,0],[0,0,0,1,0,0],[0,0,0,0,1,0],[0,0,0,0,0,1]])
+assert A.determinant() != 0
+B = zero_matrix(6)
+
+for g in G:
+    g_bad = deck_group_actions[g]
+    g_good = block_diagonal_matrix(rep[g], rep[g], identity_matrix(2))
+    B = B + g_bad*A*(g_good.inverse())
+
+# Checking that we indeed have an isomorphism
+assert B.determinant() != 0
+for g in G:
+    g_bad = deck_group_actions[g]
+    g_good = block_diagonal_matrix(rep[g], rep[g], identity_matrix(2))
+    assert g_bad*B*(g_good.inverse()) == B
+
+
+##### Lifting twists #####
+
+# This case requires some particularly chosen twists
+
+curve1 = lifted_twist.Curve(cover, [(1,0,1),(3,0,-1)])
+curve2 = lifted_twist.Curve(cover, [(4,0,1),(5,0,-1),(0,0,1),(2,0,-1),(0,1,1),(2,1,-1),(1,0,1),(3,0,-1)])
+
+T1 = action_of_twist_on_homology(cover, homology, curve1, 1)
+T2 = action_of_twist_on_homology(cover, homology, curve2, 2)
+
+for g in G:
+    assert T1.matrix().transpose()*deck_group_actions[g] == deck_group_actions[g]*T1.matrix().transpose()
+    assert T2.matrix().transpose()*deck_group_actions[g] == deck_group_actions[g]*T2.matrix().transpose()
+
+R1 = B.inverse()*T1.matrix().transpose()*B
+R2 = B.inverse()*T2.matrix().transpose()*B
+
+# The upper-left 4x4 minor lies in SU(2,2), with complex numbers represented by 2x2 matrices
+T1_in_isotypic = matrix([[R1[0][0]+I*R1[1][0], R1[0][2]+I*R1[1][2]],[R1[2][0]+I*R1[3][0],R1[2][2]+I*R1[3][2]]])
+T2_in_isotypic = matrix([[R2[0][0]+I*R2[1][0], R2[0][2]+I*R2[1][2]],[R2[2][0]+I*R2[3][0],R2[2][2]+I*R2[3][2]]])
+print(T1_in_isotypic)
+print(T2_in_isotypic)
+
+# The above matrices lie in SU(1,1), so we conjugate into SL(2,R)
+C = matrix([[1, -I],[1,I]])
+twist_matrices = [C.inverse()*T1_in_isotypic*C, C.inverse()*T2_in_isotypic*C]
+print(twist_matrices)
+
+
+##### Check finite index #####
+
+for basis_vector in homology.module.basis():
+    edge_vector = homology.edge_chain_group.module.lift_map()(homology.module.lift_map()(basis_vector))
+    print([(homology.edge_chain_group.edge_module.label(homology.edge_chain_group.edge_module.module.basis()[i]), edge_vector[i]) for i in range(0, cover.deck_group.cardinality()*cover.number_of_edges) if edge_vector[i] != 0])
+
+#print(is_finite_index(twist_matrices))

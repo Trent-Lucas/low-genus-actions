@@ -1,3 +1,10 @@
+#############################################################################
+#
+# In this file, we show that H_1(S) is two copies of the standard rep, and that
+# that the action is arithmetic.
+#
+#############################################################################
+
 from surfaces import *
 from lifted_twist import *
 from index import *
